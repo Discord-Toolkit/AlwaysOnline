@@ -1,0 +1,29 @@
+{
+  "name": "alwaysonline",
+  "version": "1.0.0",
+  "description": "Simple application written in JavaScript that you can use to be always connected to Discord, 24/7.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Discord-Toolkit/AlwaysOnline.git"
+  },
+  "keywords": [
+    "discord"
+  ],
+  "author": "RichardDorian",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Discord-Toolkit/AlwaysOnline/issues"
+  },
+  "homepage": "https://github.com/Discord-Toolkit/AlwaysOnline#readme",
+  "devDependencies": {
+    "@types/node": "^18.7.16"
+  },
+  "dependencies": {
+    "ws": "^8.8.1"
+  }
+}
