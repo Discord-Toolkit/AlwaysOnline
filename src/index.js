@@ -15,31 +15,43 @@ discord.once('READY', ({ d }) => {
   console.log(`Logged in as ${d.user.username}#${d.user.discriminator}`);
 
   if (process.env.STATUS === 'true') {
-    discord.setStatus({
-      emoji:
-        process.env.STATUS_EMOJI === 'NO'
-          ? null
-          : { animated: false, id: null, name: process.env.STATUS_EMOJI },
-      name: 'Custom Status',
-      state: process.env.STATUS_TEXT,
-      type: 4,
-    });
+    discord.setStatus(
+      {
+        emoji:
+          process.env.STATUS_EMOJI === 'NO'
+            ? null
+            : { animated: false, id: null, name: process.env.STATUS_EMOJI },
+        name: 'Custom Status',
+        state: process.env.STATUS_TEXT,
+        type: 4,
+      },
+      false
+    );
   }
 
   const spotify = new SpotifyClient(discord.spotifyAccessToken);
 
   spotify.on('message', (data) => {
-    if (!data.payloads || !data.payloads[0].events) return;
+    const event = data?.payloads?.['0']?.events?.['0'];
+    if (!event) return;
 
-    const event = data.payloads[0].events[0];
+    if (event.type === 'DEVICE_STATE_CHANGED') {
+      if (event.event.devices.every((d) => d.is_active === false))
+        return discord.setSpotifyActivity({}, true);
+    }
 
-    if (event.event.state.item === null) return;
+    if (event.type === 'PLAYER_STATE_CHANGED') {
+      if (event.event.state.is_playing === false)
+        return discord.setSpotifyActivity({}, true);
 
-    discord.setSpotifyActivity(event);
-    console.debug(
-      'Updated Spotify Activity',
-      `(album=${event.event.state.item.album.name}`,
-      `song=${event.event.state.item.name})`
-    );
+      if (event.event.state.item === null) return;
+
+      discord.setSpotifyActivity(event, false);
+      console.debug(
+        'Updated Spotify Activity',
+        `(album=${event.event.state.item.album.name}`,
+        `song=${event.event.state.item.name})`
+      );
+    }
   });
 });

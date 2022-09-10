@@ -2,13 +2,15 @@ const EventEmitter = require('node:events');
 const { WebSocket } = require('ws');
 
 module.exports = class DiscordClient extends EventEmitter {
-  #status;
+  #activities;
 
   constructor() {
     super();
 
     this.socket = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
     this.socket.on('message', (data) => this.handleMessage(data));
+
+    this.#activities = [];
   }
 
   identify() {
@@ -17,8 +19,14 @@ module.exports = class DiscordClient extends EventEmitter {
     this.write(payload);
   }
 
-  setStatus(status) {
-    this.#status = status;
+  setStatus(status, clear) {
+    this.#activities = this.#activities.filter(
+      (a) => a.name !== 'Custom Status'
+    );
+    if (clear) return this.#updateActivites();
+
+    this.#activities.push(status);
+    this.#updateActivites();
   }
 
   heartbeat() {
@@ -30,49 +38,52 @@ module.exports = class DiscordClient extends EventEmitter {
     }, this.heartbeatInterval);
   }
 
-  setSpotifyActivity({ event }) {
+  setSpotifyActivity({ event }, clear) {
+    this.#activities = this.#activities.filter((a) => a.name !== 'Spotify');
+
+    if (clear) return this.#updateActivites();
+
     const item = event.state.item;
     const album = item.album;
     const imageId = album.images[0].url.replace('https://i.scdn.co/image/', '');
 
-    const payload = {
+    this.#activities.push({
+      assets: {
+        large_image: `spotify:${imageId}`,
+        large_text: album.name,
+      },
+      details: item.name,
+      flags: 48,
+      metadata: {
+        album_id: album.id,
+        artist_ids: item.artists.map((a) => a.id),
+      },
+      name: 'Spotify',
+      party: {
+        id: `spotify:${this.userId}`,
+      },
+      state: item.artists.map((a) => a.name).join(';'),
+      sync_id: item.id,
+      timestamps: {
+        start: event.state.timestamp,
+        end: event.state.timestamp + item.duration_ms,
+      },
+      type: 2,
+    });
+
+    this.#updateActivites();
+  }
+
+  #updateActivites() {
+    this.write({
       op: 3,
       d: {
-        activities: [
-          {
-            assets: {
-              large_image: `spotify:${imageId}`,
-              large_text: album.name,
-            },
-            details: item.name,
-            flags: 48,
-            metadata: {
-              album_id: album.id,
-              artist_ids: item.artists.map((a) => a.id),
-            },
-            name: 'Spotify',
-            party: {
-              id: `spotify:${this.userId}`,
-            },
-            state: item.artists.map((a) => a.name).join(';'),
-            sync_id: item.id,
-            timestamps: {
-              start: event.state.timestamp,
-              end: event.state.timestamp + item.duration_ms,
-            },
-            type: 2,
-          },
-        ],
+        activities: this.#activities,
         afk: false,
         since: 0,
         status: 'online',
       },
-    };
-
-    if (this.#status)
-      payload.d.activities = [this.#status, ...payload.d.activities];
-
-    this.write(payload);
+    });
   }
 
   write(message) {
