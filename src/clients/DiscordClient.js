@@ -102,7 +102,11 @@ module.exports = class DiscordClient extends EventEmitter {
   }
 
   write(message) {
-    this.socket.send(JSON.stringify(message));
+    try {
+      this.socket.send(JSON.stringify(message));
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   #handleMessage(message) {

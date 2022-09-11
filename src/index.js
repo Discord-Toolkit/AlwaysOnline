@@ -11,6 +11,13 @@ discord.on('10', ({ d }) => {
   console.log(`Connected to Discord Gateway (${server})`);
 });
 
+/** @type {SpotifyClient} */
+let spotify;
+// Only doing once because if discord disconnects and resume it might break
+discord.once('READY', () => {
+  spotify = new SpotifyClient(discord.spotifyAccessToken);
+});
+
 discord.on('READY', ({ d }) => {
   console.log(`Logged in as ${d.user.username}#${d.user.discriminator}`);
 
@@ -28,8 +35,6 @@ discord.on('READY', ({ d }) => {
       false
     );
   }
-
-  const spotify = new SpotifyClient(discord.spotifyAccessToken);
 
   spotify.on('message', (data) => {
     const event = data?.payloads?.['0']?.events?.['0'];
