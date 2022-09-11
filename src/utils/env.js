@@ -14,7 +14,7 @@ try {
   });
 
   for (const record of records) {
-    if (record.length !== 2) return;
+    if (record.length !== 2) continue;
 
     process.env[record[0]] = record[1];
   }
