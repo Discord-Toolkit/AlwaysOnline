@@ -15,20 +15,23 @@ module.exports = class DiscordClient extends EventEmitter {
   }
 
   connect() {
-    this.socket = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
+    this.socket = new WebSocket(
+      this.#resuming
+        ? this.#resumeGatewayUrl
+        : 'wss://gateway.discord.gg/?v=10&encoding=json'
+    );
     this.socket.on('message', (data) => this.#handleMessage(data));
   }
 
   reconnectAndResume() {
+    console.debug('Resuming connection...');
     this.socket.close();
     this.#resuming = true;
     this.connect();
   }
 
   identify() {
-    const payload = require('../fakeIdentify');
-
-    this.write(payload);
+    this.write(require('../fakeIdentify'));
   }
 
   setStatus(status, clear) {
@@ -77,8 +80,8 @@ module.exports = class DiscordClient extends EventEmitter {
       state: item.artists.map((a) => a.name).join(';'),
       sync_id: item.id,
       timestamps: {
-        start: event.state.timestamp,
-        end: event.state.timestamp + item.duration_ms,
+        start: event.state.timestamp - event.state.progress_ms,
+        end: event.state.timestamp - event.state.progress_ms + item.duration_ms,
       },
       type: 2,
     });
@@ -105,7 +108,6 @@ module.exports = class DiscordClient extends EventEmitter {
   #handleMessage(message) {
     try {
       const data = JSON.parse(message.toString());
-
       this.lastSequenceNumber = data.s;
 
       if (data.op === 7) {
@@ -118,6 +120,7 @@ module.exports = class DiscordClient extends EventEmitter {
         const shouldResume = data.d;
         if (shouldResume) this.reconnectAndResume();
         else {
+          console.debug('Reconnecting...');
           this.socket.close();
           this.connect();
         }
