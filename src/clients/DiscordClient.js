@@ -60,7 +60,10 @@ module.exports = class DiscordClient extends EventEmitter {
 
     const item = event.state.item;
     const album = item.album;
-    const imageId = album.images[0].url.replace('https://i.scdn.co/image/', '');
+    const imageId = album?.images?.['0']?.url?.replace(
+      'https://i.scdn.co/image/',
+      ''
+    );
 
     this.#activities.push({
       assets: {
