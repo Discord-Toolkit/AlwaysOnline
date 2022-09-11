@@ -5,12 +5,12 @@ module.exports = {
     capabilities: 1021,
     properties: {
       os: 'Windows',
-      browser: 'Edge',
+      browser: 'AlwaysOnline',
       device: '',
       system_locale: 'en-US',
       browser_user_agent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.33',
-      browser_version: '105.0.1343.33',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 AlwaysOnline/1.0.0',
+      browser_version: '1.0.0',
       os_version: '10',
       referrer: 'https://www.bing.com/',
       referring_domain: '',

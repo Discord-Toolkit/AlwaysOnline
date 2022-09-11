@@ -13,7 +13,7 @@ module.exports = class SpotifyClient extends EventEmitter {
     );
     this.socket.on('message', (data) => this.handleMessage(data));
 
-    this.socket.once('open', () => {
+    this.socket.on('open', () => {
       console.log('Successfuly connected to Spotify');
       this.ping();
     });

@@ -11,7 +11,7 @@ discord.on('10', ({ d }) => {
   console.log(`Connected to Discord Gateway (${server})`);
 });
 
-discord.once('READY', ({ d }) => {
+discord.on('READY', ({ d }) => {
   console.log(`Logged in as ${d.user.username}#${d.user.discriminator}`);
 
   if (process.env.STATUS === 'true') {

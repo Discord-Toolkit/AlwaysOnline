@@ -2,15 +2,27 @@ const EventEmitter = require('node:events');
 const { WebSocket } = require('ws');
 
 module.exports = class DiscordClient extends EventEmitter {
+  #sessionId;
+  #resumeGatewayUrl;
   #activities;
+
+  #resuming = false;
 
   constructor() {
     super();
-
-    this.socket = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
-    this.socket.on('message', (data) => this.handleMessage(data));
-
+    this.connect();
     this.#activities = [];
+  }
+
+  connect() {
+    this.socket = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
+    this.socket.on('message', (data) => this.#handleMessage(data));
+  }
+
+  reconnectAndResume() {
+    this.socket.close();
+    this.#resuming = true;
+    this.connect();
   }
 
   identify() {
@@ -90,21 +102,54 @@ module.exports = class DiscordClient extends EventEmitter {
     this.socket.send(JSON.stringify(message));
   }
 
-  handleMessage(message) {
+  #handleMessage(message) {
     try {
       const data = JSON.parse(message.toString());
 
       this.lastSequenceNumber = data.s;
 
+      if (data.op === 7) {
+        // Reconnect and resume
+        this.reconnectAndResume();
+      }
+
+      if (data.op === 9) {
+        // Invalid session
+        const shouldResume = data.d;
+        if (shouldResume) this.reconnectAndResume();
+        else {
+          this.socket.close();
+          this.connect();
+        }
+      }
+
       if (data.op === 10) {
         // Gateway Hello
-        this.heartbeatInterval = data.d.heartbeat_interval * Math.random();
+        setTimeout(() => {
+          this.write({
+            op: 1,
+            d: this.lastSequenceNumber,
+          });
+        }, data.d.heartbeat_interval * Math.random());
+        this.heartbeatInterval = data.d.heartbeat_interval;
 
         this.heartbeat();
-        this.identify();
+
+        if (this.#resuming) {
+          this.write({
+            op: 6,
+            d: {
+              token: process.env.TOKEN,
+              session_id: this.#sessionId,
+              seq: this.lastSequenceNumber,
+            },
+          });
+          this.#resuming = false;
+        } else this.identify();
       }
 
       if (data.op === 0 && data.t === 'READY') {
+        // READY event (dispatch)
         const connectedAccount = data.d.connected_accounts.find(
           (v) => v.type === 'spotify' && v.show_activity
         );
@@ -112,6 +157,8 @@ module.exports = class DiscordClient extends EventEmitter {
           this.spotifyAccessToken = connectedAccount.access_token;
         }
 
+        this.#sessionId = data.d.session_id;
+        this.#resumeGatewayUrl = data.d.resume_gateway_url;
         this.userId = data.d.user.id;
       }
 
