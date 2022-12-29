@@ -36,7 +36,7 @@ module.exports = class SpotifyClient extends EventEmitter {
 
     if (data.method === 'PUT') {
       this.connectionId = data.headers['Spotify-Connection-Id'];
-      this.subscribe();
+      setTimeout(() => this.subscribe(), 1000)
     }
 
     this.emit(data.type, data);
